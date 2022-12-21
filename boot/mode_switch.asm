@@ -15,7 +15,7 @@ switch_to_32bit:
 
 init_32bit:
 	jmp $
-	mov ax, DATA_SEG + 0x7c00
+	mov ax, DATA_SEG
 	mov ds, ax
 	mov ss, ax
 	mov es, ax
