@@ -154,18 +154,19 @@ start:
 	call print_string
 	mov si, msg_politics
 	call print_string
-	call switch_to_32bit
+	call switch_to_64bit
 	jmp $
 ;============================================================
 
 
 ;============================================================
 ; FUNCTION: BEGIN_PM
-[bits 32]
+[bits 64]
 ;============================================================
 BEGIN_PM:
-	mov edx, 0xb8000
-	mov byte [edx], 'A'
+	mov rax, 0x4100000000000000
+	shr rax, 54
+	mov byte [0xb8000], al
 	jmp $								; infinite loop ( jump to current location )
 
 ;============================================================
