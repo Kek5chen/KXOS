@@ -3,8 +3,8 @@
 ; Mainly made for the KXOS project by KX
 ;============================================================
 
-bits 16									; boot into 16 bit real-mode.
-org 0
+[bits 16]								; boot into 16 bit real-mode.
+[org 0]
 
 jmp start								; jump to start
 
@@ -143,8 +143,8 @@ start:
 										; set up stack
 	mov ax, 0x0000						; set ax to 0x0000
 	mov ss, ax							; set stack segment to 0x0000
-	mov	sp, 0xFFFF						; set stack pointer to 0xFFFF
-	mov bp, sp
+	mov	bp, 0xFFFF						; set stack pointer to 0xFFFF
+	mov sp, bp
 	sti									; enable interrupts since we're done with setup
 	call setup
 	mov si, msg_booting					; set si to msg_setup
@@ -156,10 +156,25 @@ start:
 	call print_string
 	mov si, msg_politics
 	call print_string
-	jmp $								; infinite loop ( jump to current location )
+	call switch_to_32bit
+	jmp $
 ;============================================================
 
 
+;============================================================
+; FUNCTION: BEGIN_PM
+[bits 32]
+;============================================================
+BEGIN_PM:
+	mov edx, 0xb8000
+	mov byte [edx], 'A'
+	jmp $								; infinite loop ( jump to current location )
+
+;============================================================
+[bits 16]
+;===========================================================
+%include "boot/mode_switch.asm"
+;===========================================================
 
 ;============================================================
 ; MESSAGES
