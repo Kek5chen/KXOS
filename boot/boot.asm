@@ -47,6 +47,7 @@ print_char:
 ;============================================================
 
 
+
 ;============================================================
 ; FUNCTION: print_string
 ; Prints a string to the screen.
@@ -75,7 +76,6 @@ print_string:
 ; FUNCTION: start
 ; 16 bit real-mode only.
 ;============================================================
-
 start:
 										; print "Booting KXOS..."
 	mov si, msg_booting					; set si to msg_setup
