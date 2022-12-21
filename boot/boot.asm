@@ -4,7 +4,7 @@
 ;============================================================
 
 bits 16									; boot into 16 bit real-mode.
-org 0x7c00								; start at 0x7c00
+org 0
 
 										; Set background and foreground colour
 mov ah, 0x06							; Clear / scroll screen up function
@@ -32,23 +32,39 @@ bytesPerSector	equ	512		 			; bytes per sector
 bsDriveNum		db	0	  				; drive number
 
 
+;============================================================
+; FUNCTION: print_char
+; Prints a string to the screen.
+; 16 bit real mode only.
+; al: character to print
+;============================================================
+print_char:
+	push ax									; save ah
+	mov	ah, 0x0e							; set ah to 0x0e
+	int	0x10								; print al to screen
+	pop ax									; restore ah
+	ret										; return
+;============================================================
+
 
 ;============================================================
-; FUNCTION: printString
+; FUNCTION: print_string
 ; Prints a string to the screen.
 ; 16 bit real mode only.
 ; si: string to print
 ;============================================================
 print_string:
 	push si									; save si
+	push ax
 	mov	ah, 0x0e							; set ah to 0x0e
 	print_string_loop:
 		lodsb								; load byte from si into al
 		cmp	al, 0							; check if al is 0
 		je	print_string_end				; if al is 0, jump to printStringEnd
 		int	0x10							; print al to screen
-		jmp	print_string_loop					; loop
+		jmp	print_string_loop				; loop
 	print_string_end:
+		pop ax
 		pop	si								; restore si
 		ret									; return
 ;============================================================
@@ -63,13 +79,15 @@ print_string:
 start:
 										; print "Booting KXOS..."
 	mov si, msg_booting					; set si to msg_setup
+	add si, 0x7c00						; add 0x7c00 to si
 	call print_string					; print string
 										; print "Setting up registers..."
 	mov si, msg_setup					; set si to msg_setup
+	add si, 0x7c00						; add 0x7c00 to si
 	call print_string					; print string
 	cli									; disable interrupts
 										; set up registers
-	mov ax, 0x0							; set ax to 0x0
+	mov ax, 0x7c0						; set ax to 0x7c0
 	mov ds, ax							; set default data segment to ax
 	mov es, ax							; set extra segment to ax
 	mov fs, ax							; set extra segment to ax
@@ -77,11 +95,14 @@ start:
 										; set up stack
 	mov ax, 0x0000						; set ax to 0x0000
 	mov ss, ax							; set stack segment to 0x0000
-	mov	sp, 0xFFFF						; set stack pointer to 0xFFFF
+	mov	sp, 0x8000						; set stack pointer to 0xFFFF
+	mov bp, sp
 	sti									; enable interrupts since we're done with setup
 	mov BYTE [bsDriveNum], dl			; store drive number in bsDrive
 	mov si, msg_kernel					; set si to msg_kernel
 	call print_string					; print string
+	mov si, msg_politics
+	call print_string
 	jmp $								; infinite loop ( jump to current location )
 ;============================================================
 
@@ -96,6 +117,8 @@ msg_setup:
 	db "Setting up registers...", 0x0D, 0x0A, 0x00
 msg_kernel:
 	db "Loading kernel...", 0x0D, 0x0A, 0x00
+msg_politics:
+	db "Making computers great again!!!!!", 0x0D, 0x0A, "Strings found:", 0x0D, 0x0A, 0x00
 
 ;============================================================
 ; END OF CODE
