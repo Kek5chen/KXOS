@@ -6,20 +6,6 @@
 bits 16									; boot into 16 bit real-mode.
 org 0
 
-										; Set background and foreground colour
-mov ah, 0x06							; Clear / scroll screen up function
-xor al, al								; Number of lines by which to scroll up (00h = clear entire window)
-mov bh, 0x30							; Background/foreground colour. (https://en.wikipedia.org/wiki/BIOS_color_attributes)
-xor cx, cx								; Row,column of window's upper left corner
-mov dx, 0x184f							; Row,column of window's lower right corner
-int 0x10								; Issue BIOS video services interrupt with function 0x06
-										; Set cursor position to 0,0
-mov ah, 0x02							; Set cursor position function
-mov bh, 0x00							; Page number (00h = active page)
-mov dh, 0x00							; Row number (00h = top row)
-mov dl, 0x00							; Column number (00h = leftmost column)
-int 0x10								; Issue BIOS video services interrupt with function 0x02
-
 jmp start								; jump to start
 
 ;============================================================
@@ -29,7 +15,36 @@ jmp start								; jump to start
 bytesPerSector	equ	512		 			; bytes per sector
 
 ; RUNTIME VALUES
-bsDriveNum		db	0	  				; drive number
+bDriveNum		db	0xFF	  			; drive number
+
+;===========================================================
+
+
+
+;============================================================
+; FUNCTION: setup
+; 16 bit real mode only - only run right after startup
+;============================================================
+setup:
+	pusha
+	mov [bDriveNum], dl						; store drive number in bDriveNum
+											; Set background and foreground colour
+	mov ah, 0x06							; Clear / scroll screen up function
+	xor al, al								; Number of lines by which to scroll up (00h = clear entire window)
+	mov bh, 0x30							; Background/foreground colour. (https://en.wikipedia.org/wiki/BIOS_color_attributes)
+	xor cx, cx								; Row,column of window's upper left corner
+	mov dx, 0x184f							; Row,column of window's lower right corner
+	int 0x10								; Issue BIOS video services interrupt with function 0x06
+											; Set cursor position to 0,0
+	mov ah, 0x02							; Set cursor position function
+	mov bh, 0x00							; Page number (00h = active page)
+	mov dh, 0x00							; Row number (00h = top row)
+	mov dl, 0x00							; Column number (00h = leftmost column)
+	int 0x10								; Issue BIOS video services interrupt with function 0x02
+	popa
+	ret
+;============================================================
+
 
 
 ;============================================================
@@ -73,18 +88,51 @@ print_string:
 
 
 ;============================================================
+; FUNCTION: read_sector
+; 16 bit real-mode only
+; al: sectors to read
+; ch: from cylinder
+; cl: from sector
+; dh: from head
+; dl: from drive
+; es:bx: to buffer address pointer
+;============================================================
+read_sector:
+	mov ah, 0x02
+	int 0x13
+	ret
+;============================================================
+
+
+
+;============================================================
+; FUNCTION: load_kernel
+; 16 bit real-mode only
+;============================================================
+load_kernel:
+	pusha
+	mov al, 1							; one sector
+	mov ch, 0							; first cylinder
+	mov cl, 2							; second sector
+	mov dh, 0							; head to start reading from
+	mov dl, [bDriveNum]					; drive to start reading from
+	mov bx, 0x200						; buffer = 0x7c0 * 0x10 + 0x200 = right after boot sector
+	call read_sector
+	jnc no_error
+	mov si, msg_load_failure
+	call print_string
+	no_error:
+		popa
+		ret
+;============================================================
+
+
+
+;============================================================
 ; FUNCTION: start
 ; 16 bit real-mode only.
 ;============================================================
 start:
-										; print "Booting KXOS..."
-	mov si, msg_booting					; set si to msg_setup
-	add si, 0x7c00						; add 0x7c00 to si
-	call print_string					; print string
-										; print "Setting up registers..."
-	mov si, msg_setup					; set si to msg_setup
-	add si, 0x7c00						; add 0x7c00 to si
-	call print_string					; print string
 	cli									; disable interrupts
 										; set up registers
 	mov ax, 0x7c0						; set ax to 0x7c0
@@ -95,12 +143,17 @@ start:
 										; set up stack
 	mov ax, 0x0000						; set ax to 0x0000
 	mov ss, ax							; set stack segment to 0x0000
-	mov	sp, 0x8000						; set stack pointer to 0xFFFF
+	mov	sp, 0xFFFF						; set stack pointer to 0xFFFF
 	mov bp, sp
 	sti									; enable interrupts since we're done with setup
-	mov BYTE [bsDriveNum], dl			; store drive number in bsDrive
+	call setup
+	mov si, msg_booting					; set si to msg_setup
+	call print_string					; print "Booting KXOS..."
 	mov si, msg_kernel					; set si to msg_kernel
-	call print_string					; print string
+	call print_string					; print "Loading kernel..."
+	call load_kernel
+	mov si, load_success
+	call print_string
 	mov si, msg_politics
 	call print_string
 	jmp $								; infinite loop ( jump to current location )
@@ -118,11 +171,16 @@ msg_setup:
 msg_kernel:
 	db "Loading kernel...", 0x0D, 0x0A, 0x00
 msg_politics:
-	db "Making computers great again!!!!!", 0x0D, 0x0A, "Strings found:", 0x0D, 0x0A, 0x00
+	db "Making computers great again!!!!!", 0x0D, 0x0A, 0x00
+msg_load_failure:
+	db "Error: Loading Sector failed.", 0x0D, 0x0A, 0x00
 
 ;============================================================
 ; END OF CODE
 ;============================================================
 
-times 510-($-$$) db 0x00
+times 510-($-$$) db 0
 dw 0xAA55
+load_success:
+	db "Loaded successfully!", 0x0D, 0x0A, 0x00
+times 512*2-($-$$) db 0
