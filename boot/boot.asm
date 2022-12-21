@@ -11,11 +11,10 @@ jmp start								; jump to start
 ;============================================================
 ; VALUE STORAGE
 ;============================================================
-; PRESET VALUES
-bytesPerSector	equ	512		 			; bytes per sector
 
 ; RUNTIME VALUES
 bDriveNum		db	0xFF	  			; drive number
+bNextSector		db	0x02
 
 ;===========================================================
 
@@ -106,23 +105,44 @@ read_sector:
 
 
 ;============================================================
+; FUNCTION: read_sector
+; 16 bit real-mode only
+; al: sectors to read
+; ch: from cylinder
+; cl: from sector
+; dh: from head
+; dl: from drive
+; es:bx: to buffer address pointer
+;============================================================
+read_next_sector:
+	push cx
+	push dx
+	mov al, 2
+	mov ch, 0
+	mov cl, [bNextSector]
+	mov dh, 0
+	mov dl, [bDriveNum]
+	mov bx, 0x7e00
+	call read_sector
+	inc cl
+	mov [bNextSector], cl
+	pop dx
+	pop cx
+	ret
+;============================================================
+
+
+
+;============================================================
 ; FUNCTION: load_kernel
 ; 16 bit real-mode only
 ;============================================================
 load_kernel:
-	pusha
-	mov al, 1							; one sector
-	mov ch, 0							; first cylinder
-	mov cl, 2							; second sector
-	mov dh, 0							; head to start reading from
-	mov dl, [bDriveNum]					; drive to start reading from
-	mov bx, 0x200						; buffer = 0x7c0 * 0x10 + 0x200 = right after boot sector
-	call read_sector
+	call read_next_sector
 	jnc no_error
 	mov si, msg_load_failure
 	call print_string
 	no_error:
-		popa
 		ret
 ;============================================================
 
@@ -145,28 +165,23 @@ start:
 	mov sp, bp
 	sti									; enable interrupts since we're done with setup
 	call setup
-	mov si, msg_booting					; set si to msg_setup
+	mov si, msg_booting					; set si to msg_booting
 	call print_string					; print "Booting KXOS..."
 	mov si, msg_kernel					; set si to msg_kernel
 	call print_string					; print "Loading kernel..."
-	call load_kernel
-	mov si, load_success
-	call print_string
-	mov si, msg_politics
-	call print_string
-	call switch_to_64bit
-	jmp $
+	call load_kernel					; load kernel
+	mov si, load_success				; set si to msg_kernel
+	call print_string					; print "Loaded next sector successfully!"
+	jmp switch_to_32bit
 ;============================================================
 
 
 ;============================================================
 ; FUNCTION: BEGIN_PM
-[bits 64]
+[bits 32]
 ;============================================================
 BEGIN_PM:
-	mov rax, 0x4100000000000000
-	shr rax, 54
-	mov byte [0xb8000], al
+	call 0x7e00
 	jmp $								; infinite loop ( jump to current location )
 
 ;============================================================
@@ -179,15 +194,15 @@ BEGIN_PM:
 ; MESSAGES
 ;============================================================
 msg_booting:
-	db "Booting KXOS...", 0x0D, 0x0A, 0x00
+	db "        ------------------------ Booting KXOS ------------------------", 0x0D, 0x0A, 0x00
 msg_setup:
 	db "Setting up registers...", 0x0D, 0x0A, 0x00
 msg_kernel:
 	db "Loading kernel...", 0x0D, 0x0A, 0x00
-msg_politics:
-	db "Making computers great again!!!!!", 0x0D, 0x0A, 0x00
 msg_load_failure:
-	db "Error: Loading Sector failed.", 0x0D, 0x0A, 0x00
+	db "Error: Loading next sector failed.", 0x0D, 0x0A, 0x00
+load_success:
+	db "Loaded next sector successfully! Going Kernel... Bye from BS", 0x0D, 0x0A, 0x00
 
 ;============================================================
 ; END OF CODE
@@ -195,6 +210,3 @@ msg_load_failure:
 
 times 510-($-$$) db 0
 dw 0xAA55
-load_success:
-	db "Loaded successfully!", 0x0D, 0x0A, 0x00
-times 512*2-($-$$) db 0
