@@ -1,5 +1,4 @@
 [bits 16]
-[org 0x0]
 %include "boot/gdt.asm"						; global descriptor table
 
 switch_to_32bit:
