@@ -14,7 +14,6 @@ switch_to_32bit:
 [bits 32]
 
 init_32bit:
-	jmp $
 	mov ax, DATA_SEG
 	mov ds, ax
 	mov ss, ax
@@ -24,8 +23,6 @@ init_32bit:
 
 	mov ebp, 0x90000
 	mov esp, ebp
-
-	jmp CODE_SEG:init_32bit
 
 	call BEGIN_PM
 
