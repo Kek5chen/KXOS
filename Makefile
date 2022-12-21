@@ -10,7 +10,7 @@ $(NAME): boot/boot.asm boot/mode_switch.asm boot/gdt.asm
 	nasm -f bin boot/boot.asm -o $(ODIR)/boot.bin
 # COPY TO ISO FILE
 	truncate $(ODIR)/boot.bin -s 1200k
-	mkisofs -o $(NAME) -b $(ODIR)/boot.bin .
+	mkisofs -o $(NAME) -input-charset iso8859-1 -b $(ODIR)/boot.bin .
 
 clean:
 	rm -f $(NAME)
