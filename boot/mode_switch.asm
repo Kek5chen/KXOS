@@ -1,19 +1,19 @@
 [bits 16]
 %include "boot/gdt.asm"						; global descriptor table
 
-switch_to_64bit:
+switch_to_32bit:
 	cli
 	lgdt [gdt_descriptor]
 	mov eax, cr0
 	or eax, 0x1
 	mov cr0, eax
-	jmp CODE_SEG:init_64bit
+	jmp CODE_SEG:init_32bit
 
 
 
-[bits 64]
+[bits 32]
 
-init_64bit:
+init_32bit:
 	mov ax, DATA_SEG
 	mov ds, ax
 	mov ss, ax
