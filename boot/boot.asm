@@ -4,7 +4,7 @@
 ;============================================================
 
 [bits 16]								; boot into 16 bit real-mode.
-[org 0]
+[org 0x7c00]
 
 jmp start								; jump to start
 
@@ -135,13 +135,11 @@ load_kernel:
 start:
 	cli									; disable interrupts
 										; set up registers
-	mov ax, 0x7c0						; set ax to 0x7c0
+	xor ax, ax							; set ax to 0x7c0
 	mov ds, ax							; set default data segment to ax
 	mov es, ax							; set extra segment to ax
 	mov fs, ax							; set extra segment to ax
 	mov gs, ax							; set stack segment to ax
-										; set up stack
-	mov ax, 0x0000						; set ax to 0x0000
 	mov ss, ax							; set stack segment to 0x0000
 	mov	bp, 0xFFFF						; set stack pointer to 0xFFFF
 	mov sp, bp
