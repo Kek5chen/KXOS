@@ -7,7 +7,10 @@ REMOTE_SERVER_IP =
 
 KERNEL_DIR = kernel
 KERNEL_SRC = $(wildcard $(KERNEL_DIR)/*.c)
+KERNEL_SRC_ASM = $(wildcard $(KERNEL_DIR)/*.asm)
 KERNEL_OBJ = $(patsubst %.c, $(ODIR)/%.o, $(KERNEL_SRC))
+KERNELOBJ_NOENTRY=$(patsubst $(ODIR)/kernel/entry.o,,$(KERNEL_OBJ))
+KERNEL_OBJ_ASM = $(patsubst %.asm, $(ODIR)/%.o, $(KERNEL_SRC_ASM))
 
 all: $(NAME)
 
@@ -23,13 +26,17 @@ $(NAME): kernel boot/boot.asm boot/mode_switch.asm boot/gdt.asm
 	truncate $(ODIR)/boot.bin -s 1200k
 	genisoimage -o $(NAME) -input-charset iso8859-1 -b $(ODIR)/boot.bin .
 
-kernel: $(KERNEL_OBJ)
+kernel: $(KERNEL_OBJ) $(KERNEL_OBJ_ASM)
+# LINK
+	ld -o $(ODIR)/kernel.bin -Ttext 0x7e00 $(ODIR)/kernel/entry.o $(KERNELOBJ_NOENTRY) $(KERNEL_OBJ_ASM) --oformat binary -m elf_i386
 
 $(ODIR)/$(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.c
 	mkdir -p $(ODIR)/$(KERNEL_DIR)
 	gcc -ffreestanding -c $< -o $@ -m32 -fno-pie
-# LINK
-	ld -o $(ODIR)/kernel.bin -Ttext 0x7e00 $(KERNEL_OBJ) --oformat binary -m elf_i386
+
+$(ODIR)/$(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.asm
+	mkdir -p $(ODIR)/$(KERNEL_DIR)
+	nasm -f elf32 $< -o $@
 
 clean:
 	rm -rf $(ODIR)
@@ -37,8 +44,8 @@ clean:
 fclean: clean
 	rm -rf $(BDIR)
 
-run: $(NAME)
-	qemu-system-x86_64.exe -hda $(ODIR)/boot.bin
+run:
+	qemu-system-x86_64 -hda $(ODIR)/boot.bin
 
 upload:
 	rsync -avz -e 'ssh' $(WD) $(REMOTE_SERVER_IP):/tmp
@@ -46,4 +53,7 @@ upload:
 	rsync -avz -e 'ssh' $(REMOTE_SERVER_IP):/tmp/KXOS/obj $(WD)
 	rsync -avz -e 'ssh' $(REMOTE_SERVER_IP):/tmp/KXOS/bin $(WD)
 
+uploadandrun: upload run
+
 .PHONY: all clean run kernel
+.NOTPARALLEL: uploadandrun
