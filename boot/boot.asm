@@ -15,6 +15,7 @@ jmp start								; jump to start
 ; RUNTIME VALUES
 bDriveNum		db	0xFF	  			; drive number
 bNextSector		db	0x02
+wNextAddress	dw	0x7e00
 
 ;===========================================================
 
@@ -117,12 +118,13 @@ read_sector:
 read_next_sector:
 	push cx
 	push dx
-	mov al, 2
+	mov al, 3
 	mov ch, 0
 	mov cl, [bNextSector]
 	mov dh, 0
 	mov dl, [bDriveNum]
-	mov bx, 0x7e00
+	mov bx, [wNextAddress]
+	add word [wNextAddress], 0x200
 	call read_sector
 	inc cl
 	mov [bNextSector], cl
@@ -131,19 +133,31 @@ read_next_sector:
 	ret
 ;============================================================
 
-
+read_next_sector_loop:
+	push cx
+	mov cx, 0
+	read_next_sector_loop2:
+		call read_next_sector
+		jc rns_error
+		inc cx
+		cmp cx, 0x3F
+		jne read_next_sector_loop2
+rns_error:
+	pop cx
+	ret
 
 ;============================================================
 ; FUNCTION: load_kernel
 ; 16 bit real-mode only
 ;============================================================
 load_kernel:
-	call read_next_sector
-	jnc no_error
+	call read_next_sector_loop
+	jc error
+	ret
+error:
 	mov si, msg_load_failure
 	call print_string
-	no_error:
-		ret
+	ret
 ;============================================================
 
 
