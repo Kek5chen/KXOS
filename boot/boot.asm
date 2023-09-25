@@ -143,7 +143,7 @@ read_next_sector_loop:
         call read_next_sector
         jc rns_error          ; If there's an error, handle and return immediately
         inc cx
-        cmp cx, 0x3F
+        cmp cx, 0x9
         jne read_next_sector_loop2
     clc                       ; Clear carry flag to indicate success
     pop cx
