@@ -1,64 +1,71 @@
-ODIR = obj
-BDIR = bin
-NAME = $(BDIR)/kxos.iso
+# Variables
+ODIR := obj
+BDIR := bin
+NAME := $(BDIR)/kxos.iso
+WD := $(shell pwd)
+REMOTE_SERVER_IP :=
+KERNEL_DIR := kernel
+KERNEL_SRC := $(wildcard $(KERNEL_DIR)/*.c)
+KERNEL_SRC_ASM := $(wildcard $(KERNEL_DIR)/*.asm)
+KERNEL_OBJ := $(patsubst %.c, $(ODIR)/%.o, $(KERNEL_SRC))
+KERNELOBJ_NOENTRY := $(filter-out $(ODIR)/kernel/entry.o, $(KERNEL_OBJ))
+KERNEL_OBJ_ASM := $(patsubst %.asm, $(ODIR)/%.o, $(KERNEL_SRC_ASM))
 
-WD = $(shell pwd)
-REMOTE_SERVER_IP =
-
-KERNEL_DIR = kernel
-KERNEL_SRC = $(wildcard $(KERNEL_DIR)/*.c)
-KERNEL_SRC_ASM = $(wildcard $(KERNEL_DIR)/*.asm)
-KERNEL_OBJ = $(patsubst %.c, $(ODIR)/%.o, $(KERNEL_SRC))
-KERNELOBJ_NOENTRY = $(patsubst $(ODIR)/kernel/entry.o,,$(KERNEL_OBJ))
-KERNEL_OBJ_ASM = $(patsubst %.asm, $(ODIR)/%.o, $(KERNEL_SRC_ASM))
+# Compilation Flags
+CFLAGS := -ffreestanding -m32 -fno-pie -fno-stack-protector -g
+NASMFLAGS := -f elf32 -g
 
 # Main Targets
 all: $(NAME)
 
-$(NAME): kernel
-	@# SETUP
-	mkdir -p $(BDIR)
-	mkdir -p $(ODIR)
-	@# ASSEMBLE
-	nasm -f bin boot/boot.asm -o $(ODIR)/boot.bin
-	@# APPEND
-	cat $(ODIR)/kernel.bin >> $(ODIR)/boot.bin
-	@# COPY TO ISO FILE
-	truncate $(ODIR)/boot.bin -s 1200k
-	genisoimage -o $(NAME) -input-charset iso8859-1 -b $(ODIR)/boot.bin .
+$(NAME): bootloader kernel
+	@mkdir -p $(BDIR)
+	@cat $(ODIR)/boot.bin $(ODIR)/kernel.bin > $(ODIR)/combined.bin
+	@truncate $(ODIR)/combined.bin -s 1200k
+	@genisoimage -o $(NAME) -input-charset iso8859-1 -b $(ODIR)/combined.bin .
+	@echo "ISO image compiled successfully!"
 
+# Bootloader Targets
+bootloader:
+	@mkdir -p $(ODIR)
+	@nasm -f bin boot/boot.asm -o $(ODIR)/boot.bin
+	@echo "Compiled boot.asm"
+	@echo "Bootloader compiled successfully!"
+
+# Kernel Targets
 kernel: $(KERNEL_OBJ) $(KERNEL_OBJ_ASM)
-	@# LINK
-	ld -o $(ODIR)/kernel.bin -T linker.ld $(ODIR)/kernel/entry.o $(KERNELOBJ_NOENTRY) $(KERNEL_OBJ_ASM) --oformat binary -m elf_i386
+	@ld -o $(ODIR)/kernel.elf -T linker.ld $(KERNEL_OBJ) $(KERNEL_OBJ_ASM) -m elf_i386
+	@objcopy -O binary $(ODIR)/kernel.elf $(ODIR)/kernel.bin
+	@echo "Kernel compiled successfully!"
 
-# Compilation Rules
 $(ODIR)/$(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.c
-	mkdir -p $(ODIR)/$(KERNEL_DIR)
-	gcc -ffreestanding -c $< -o $@ -m32 -fno-pie -fno-stack-protector
+	@mkdir -p $(ODIR)/$(KERNEL_DIR)
+	@gcc $(CFLAGS) -c $< -o $@
+	@echo "Compiled $<"
 
 $(ODIR)/$(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.asm
-	mkdir -p $(ODIR)/$(KERNEL_DIR)
-	nasm -f elf32 $< -o $@
+	@mkdir -p $(ODIR)/$(KERNEL_DIR)
+	@nasm $(NASMFLAGS) $< -o $@
+	@echo "Compiled $<"
 
-# Other Rules
+# Utility Targets
 clean:
-	rm -rf $(ODIR)
+	@rm -rf $(ODIR)
+	@rm -rf $(BDIR)
+	@echo "Cleaned up project!"
 
-fclean: clean
-	rm -rf $(BDIR)
-
-re: fclean all
+re: clean all
 
 run: $(NAME)
-	qemu-system-x86_64 -cdrom $(NAME)
+	@qemu-system-i386 -s -S -cdrom $(NAME)
 
 upload:
-	rsync -avz -e 'ssh' $(WD) $(REMOTE_SERVER_IP):/tmp
-	ssh $(REMOTE_SERVER_IP) "cd /tmp/KXOS && make fclean && make"
-	rsync -avz -e 'ssh' $(REMOTE_SERVER_IP):/tmp/KXOS/$(ODIR) $(WD)
-	rsync -avz -e 'ssh' $(REMOTE_SERVER_IP):/tmp/KXOS/$(BDIR) $(WD)
+	@rsync -avz -e 'ssh' $(WD) $(REMOTE_SERVER_IP):/tmp
+	@ssh $(REMOTE_SERVER_IP) "cd /tmp/KXOS && make fclean && make"
+	@rsync -avz -e 'ssh' $(REMOTE_SERVER_IP):/tmp/KXOS/$(ODIR) $(WD)
+	@rsync -avz -e 'ssh' $(REMOTE_SERVER_IP):/tmp/KXOS/$(BDIR) $(WD)
 
 uploadandrun: upload run
 
-.PHONY: all clean run kernel
+.PHONY: all clean fclean re run kernel bootloader upload uploadandrun
 .NOTPARALLEL: uploadandrun
