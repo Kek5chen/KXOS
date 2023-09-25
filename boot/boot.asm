@@ -137,17 +137,22 @@ read_next_sector:
 ;============================================================
 
 read_next_sector_loop:
-	push cx
-	mov cx, 0
-	read_next_sector_loop2:
-		call read_next_sector
-		jc rns_error
-		inc cx
-		cmp cx, 0x3F
-		jne read_next_sector_loop2
+    push cx
+    mov cx, 0
+    read_next_sector_loop2:
+        call read_next_sector
+        jc rns_error          ; If there's an error, handle and return immediately
+        inc cx
+        cmp cx, 0x3F
+        jne read_next_sector_loop2
+    clc                       ; Clear carry flag to indicate success
+    pop cx
+    ret
+
 rns_error:
-	pop cx
-	ret
+    stc                       ; Set carry flag to indicate error
+    pop cx
+    ret
 
 ;============================================================
 ; FUNCTION: load_kernel
@@ -156,10 +161,14 @@ rns_error:
 load_kernel:
 	call read_next_sector_loop
 	jc error
+    mov si, load_success
+    call print_string
+    clc
 	ret
 error:
 	mov si, msg_load_failure
 	call print_string
+	stc
 	ret
 ;============================================================
 
@@ -187,11 +196,12 @@ _start:
 	mov si, msg_kernel					; set si to msg_kernel
 	call print_string					; print "Loading kernel..."
 	call load_kernel					; load kernel
-	mov si, load_success				; set si to msg_kernel
-	call print_string					; print "Loaded next sector successfully!"
+	jc ERROR_HANG
 	jmp switch_to_32bit
 ;============================================================
 
+ERROR_HANG:
+	jmp $								; infinite loop ( jump to current location )
 
 ;============================================================
 ; FUNCTION: BEGIN_PM
@@ -212,8 +222,6 @@ BEGIN_PM:
 ;============================================================
 msg_booting:
 	db "        ------------------------ Booting KXOS ------------------------", 0x0D, 0x0A, 0x00
-msg_setup:
-	db "Setting up registers...", 0x0D, 0x0A, 0x00
 msg_kernel:
 	db "Loading kernel...", 0x0D, 0x0A, 0x00
 msg_load_failure:
