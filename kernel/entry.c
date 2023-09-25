@@ -22,7 +22,7 @@ int strlen(const char *s)
 }
 
 __attribute__((section(".text.kernel_entry")))
-int	kernel_entry(void)
+int	_start(void)
 {
 	clear_screen();
 	char *str = "Welcome to KXOS";
