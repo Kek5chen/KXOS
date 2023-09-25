@@ -56,8 +56,11 @@ clean:
 
 re: clean all
 
-run: $(NAME)
+debug: $(NAME)
 	@qemu-system-i386 -s -S -cdrom $(NAME)
+
+run: $(NAME)
+	@qemu-system-i386 -cdrom $(NAME)
 
 upload:
 	@rsync -avz -e 'ssh' $(WD) $(REMOTE_SERVER_IP):/tmp
