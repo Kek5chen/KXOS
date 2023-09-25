@@ -13,11 +13,20 @@ typedef struct __attribute__((packed)) telechar_s
 	unsigned char a;
 } telechar_t;
 
+int strlen(const char *s)
+{
+	int i = 0;
+	while (s[i])
+		i++;
+	return i;
+}
+
 __attribute__((section(".text.kernel_entry")))
 int	kernel_entry(void)
 {
 	clear_screen();
-	print_string("Hello", 0x0A, MAKE_XY(0, 0));
+	char *str = "Welcome to KXOS";
+	print_string(str, 0x0A, MAKE_XY(40 - strlen(str) / 2, 12));
 	while (1)
 		;
 	return 0xABC;
@@ -26,8 +35,9 @@ int	kernel_entry(void)
 void clear_screen()
 {
 	telechar_t *p = (telechar_t *)VMB;
-	for(int i = 0; i < MAKE_XY(80, 20); i++) {
+	for(int i = 0; i < MAKE_XY(80, 24); i++) {
 		p[i].c = 0;
+		p[i].a = 0;
 	}
 }
 
