@@ -5,8 +5,11 @@
 
 [bits 16]								; boot into 16 bit real-mode.
 [org 0x7c00]
+[section .boot]
 
-jmp start								; jump to start
+global _start
+
+jmp _start								; jump to _start
 
 ;============================================================
 ; VALUE STORAGE
@@ -163,10 +166,10 @@ error:
 
 
 ;============================================================
-; FUNCTION: start
+; FUNCTION: _start
 ; 16 bit real-mode only.
 ;============================================================
-start:
+_start:
 	cli									; disable interrupts
 										; set up registers
 	xor ax, ax							; set ax to 0x7c0
