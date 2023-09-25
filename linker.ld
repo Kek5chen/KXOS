@@ -9,6 +9,8 @@ SECTIONS
         *(.boot)
     }
 
+    . = 0x7e00; /* Kernel starts at 0x7e00 */
+
     .text :
     {
         *(.text.kernel_entry)
