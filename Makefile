@@ -28,7 +28,7 @@ $(NAME): kernel boot/boot.asm boot/mode_switch.asm boot/gdt.asm
 
 kernel: $(KERNEL_OBJ) $(KERNEL_OBJ_ASM)
 # LINK
-	ld -o $(ODIR)/kernel.bin -Ttext 0x7e00 $(ODIR)/kernel/entry.o $(KERNELOBJ_NOENTRY) $(KERNEL_OBJ_ASM) --oformat binary -m elf_i386
+	ld -o $(ODIR)/kernel.bin -T linker.ld $(ODIR)/kernel/entry.o $(KERNELOBJ_NOENTRY) $(KERNEL_OBJ_ASM) --oformat binary -m elf_i386
 
 $(ODIR)/$(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.c
 	mkdir -p $(ODIR)/$(KERNEL_DIR)
