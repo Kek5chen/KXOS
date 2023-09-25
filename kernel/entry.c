@@ -13,6 +13,7 @@ typedef struct telechar_s
 	unsigned char a;
 } telechar_t;
 
+__attribute__((section(".text.kernel_entry")))
 int	kernel_entry(void)
 {
 	int i = MAKE_XY(3, 4);

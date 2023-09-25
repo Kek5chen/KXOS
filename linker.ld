@@ -11,6 +11,7 @@ SECTIONS
 
     .text :
     {
+        *(.text.kernel_entry)
         *(.text)
     }
 
@@ -18,8 +19,6 @@ SECTIONS
     {
         *(.data)
     }
-
-    /* ... other sections ... */
 
     /DISCARD/ :
     {
