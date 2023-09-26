@@ -5,11 +5,10 @@ NAME := $(BDIR)/kxos.iso
 WD := $(shell pwd)
 REMOTE_SERVER_IP :=
 KERNEL_DIR := kernel
-KERNEL_SRC := $(wildcard $(KERNEL_DIR)/*.c)
-KERNEL_SRC_ASM := $(wildcard $(KERNEL_DIR)/*.asm)
-KERNEL_OBJ := $(patsubst %.c, $(ODIR)/%.o, $(KERNEL_SRC))
-KERNELOBJ_NOENTRY := $(filter-out $(ODIR)/kernel/entry.o, $(KERNEL_OBJ))
-KERNEL_OBJ_ASM := $(patsubst %.asm, $(ODIR)/%.o, $(KERNEL_SRC_ASM))
+KERNEL_SRC := $(shell find $(KERNEL_DIR) -name '*.c')
+KERNEL_SRC_ASM := $(shell find $(KERNEL_DIR) -name '*.asm')
+KERNEL_OBJ := $(patsubst $(KERNEL_DIR)/%.c,$(ODIR)/%.o,$(KERNEL_SRC))
+KERNEL_OBJ_ASM := $(patsubst $(KERNEL_DIR)/%.asm,$(ODIR)/%.o,$(KERNEL_SRC_ASM))
 
 # Compilation Flags
 CFLAGS := -ffreestanding -m32 -fno-pie -fno-stack-protector -g
@@ -38,13 +37,13 @@ kernel: $(KERNEL_OBJ) $(KERNEL_OBJ_ASM)
 	@objcopy -O binary $(ODIR)/kernel.elf $(ODIR)/kernel.bin
 	@echo "Kernel compiled successfully!"
 
-$(ODIR)/$(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.c
-	@mkdir -p $(ODIR)/$(KERNEL_DIR)
+$(ODIR)/%.o: $(KERNEL_DIR)/%.c
+	@mkdir -p $(@D)
 	@gcc $(CFLAGS) -c $< -o $@
 	@echo "Compiled $<"
 
-$(ODIR)/$(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.asm
-	@mkdir -p $(ODIR)/$(KERNEL_DIR)
+$(ODIR)/%.o: $(KERNEL_DIR)/%.asm
+	@mkdir -p $(@D)
 	@nasm $(NASMFLAGS) $< -o $@
 	@echo "Compiled $<"
 
