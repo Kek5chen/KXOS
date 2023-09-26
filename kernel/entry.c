@@ -1,6 +1,7 @@
 #include "io/io.h"
 #include "utils/virtprint.h"
 #include "utils/string.h"
+#include "interrupts/interrupts.h"
 
 __attribute__((section(".text.kernel_entry")))
 int	_start(void)
@@ -15,6 +16,8 @@ int	_start(void)
 	print_number(0, 0x0A, MAKE_XY(45, 14));
 	print_number(0, 0x0A, MAKE_XY(45, 15));
 	print_character(' ', 0x0A, MAKE_XY(45, 16));
+	print_string("a: load custom IDT", 0x0A, MAKE_XY(5, 3));
+	print_string("b: trigger interrupt", 0x0A, MAKE_XY(5, 4));
 	while (1) {
 		uint8_t read = read_character_async();
 		if (read == 0)
@@ -24,6 +27,13 @@ int	_start(void)
 			continue;
 
 		char keycode = scancode_to_keycode(read);
+		if (keycode == 'a') {
+			install_idt();
+			print_string("Interrupt Table loaded!", 0x0A, MAKE_XY(4, 22));
+		}
+		if (keycode == 'b') {
+			asm volatile("int $0x0");
+		}
 		print_string("   ", 0x0A, MAKE_XY(45, 14));
 		print_string("   ", 0x0A, MAKE_XY(45, 15));
 		print_character(' ', 0x0A, MAKE_XY(45, 16));
