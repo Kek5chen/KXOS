@@ -1,6 +1,6 @@
 #include "io/io.h"
 #include "utils/virtprint.h"
-#include "utils/string.h"
+#include <string.h>
 #include "interrupts/interrupts.h"
 
 __attribute__((section(".text.kernel_entry")))
