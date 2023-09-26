@@ -16,14 +16,14 @@ int	_start(void)
 	print_number(0, 0x0A, MAKE_XY(45, 15));
 	print_character(' ', 0x0A, MAKE_XY(45, 16));
 	while (1) {
-		unsigned char read = read_character_async();
+		uint8_t read = read_character_async();
 		if (read == 0)
 			continue;
 
 		if (read >= 128)
 			continue;
 
-		char keycode = to_keycode(read);
+		char keycode = scancode_to_keycode(read);
 		print_string("   ", 0x0A, MAKE_XY(45, 14));
 		print_string("   ", 0x0A, MAKE_XY(45, 15));
 		print_character(' ', 0x0A, MAKE_XY(45, 16));

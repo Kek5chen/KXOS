@@ -1,7 +1,7 @@
 #pragma once
 
-#define	PTR_VMB	0xB8000							// Video Memory Base
-#define MAKE_XY(x, y) ((y) * 80 + (x))		// Make XY coordinate
+#define	PTR_VMB	0xB8000									// Video Memory Base
+#define MAKE_XY(x, y) ((uint32_t)((y) * 80 + (x)))		// Make XY coordinate
 
 typedef struct __attribute__((packed)) telechar_s
 {
@@ -9,7 +9,9 @@ typedef struct __attribute__((packed)) telechar_s
 	unsigned char a;
 } telechar_t;
 
-void print_string(const char *s, unsigned char color, int pos);
-void print_character(char c, unsigned char color, int pos);
+typedef uint32_t telepostype_t;
+
 void clear_screen();
-void print_number(int n, unsigned char color, int pos);
+void print_character(char c, uint8_t color, telepostype_t pos);
+void print_string(const char *s, uint8_t color, telepostype_t pos);
+void print_number(int n, uint8_t color, telepostype_t pos);

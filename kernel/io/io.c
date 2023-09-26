@@ -1,6 +1,5 @@
 #include "io.h"
 
-
 static char kbd_US[128] = {
 	0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
 	'\t', /* <-- Tab */
@@ -35,7 +34,7 @@ static char kbd_US[128] = {
 	0,  /* All other keys are undefined */
 };
 
-char to_scancode(char c)
+uint8_t to_scancode(char c)
 {
 	for (int i = 0; i < 128; i++)
 		if (kbd_US[i] == c)
@@ -43,14 +42,14 @@ char to_scancode(char c)
 	return 0;
 }
 
-char to_keycode(unsigned char scancode)
+char scancode_to_keycode(unsigned char scancode)
 {
 	if (scancode >= 128)
 		return 0;
 	return kbd_US[scancode];
 }
 
-unsigned char read_character() {
+uint8_t read_character() {
 	// Check if the keyboard has sent data (by checking bit 0 of port 0x64)
 	while ((inl(0x64) & 0x1) == 0);
 
@@ -58,7 +57,7 @@ unsigned char read_character() {
 	return inl(0x60);
 }
 
-unsigned char read_character_async() {
+uint8_t read_character_async() {
 	if ((inb(0x64) & 0x1) == 0) return 0;
 	return inb(0x60);
 }
