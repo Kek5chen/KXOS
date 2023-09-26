@@ -33,19 +33,25 @@ bootloader:
 
 # Kernel Targets
 kernel: $(KERNEL_OBJ) $(KERNEL_OBJ_ASM)
+	@echo "Linking " $(KERNEL_OBJ) $(KERNEL_OBJ_ASM) " into kernel.elf..."
 	@ld -o $(ODIR)/kernel.elf -T linker.ld $(KERNEL_OBJ) $(KERNEL_OBJ_ASM) -m elf_i386
+	@echo "... success!"
+	@echo "Converting kernel.elf to kernel.bin..."
 	@objcopy -O binary $(ODIR)/kernel.elf $(ODIR)/kernel.bin
+	@echo "... success!"
 	@echo "Kernel compiled successfully!"
 
 $(ODIR)/%.o: $(KERNEL_DIR)/%.c
+	@echo "Compiling $<..."
 	@mkdir -p $(@D)
-	@gcc $(CFLAGS) -c $< -o $@
-	@echo "Compiled $<"
+	@gcc -Ikernel $(CFLAGS) -c $< -o $@
+	@echo "... success!"
 
 $(ODIR)/%.o: $(KERNEL_DIR)/%.asm
+	@echo "Compiling $<..."
 	@mkdir -p $(@D)
 	@nasm $(NASMFLAGS) $< -o $@
-	@echo "Compiled $<"
+	@echo "... success!"
 
 # Utility Targets
 clean:
