@@ -11,7 +11,7 @@ KERNEL_OBJ := $(patsubst $(KERNEL_DIR)/%.c,$(ODIR)/%.o,$(KERNEL_SRC))
 KERNEL_OBJ_ASM := $(patsubst $(KERNEL_DIR)/%.asm,$(ODIR)/%.o,$(KERNEL_SRC_ASM))
 
 # Compilation Flags
-CFLAGS := -ffreestanding -m32 -fno-pie -fno-stack-protector -g
+CFLAGS := -ffreestanding -m32 -fno-pie -fno-stack-protector -g -mgeneral-regs-only -mno-red-zone
 NASMFLAGS := -f elf32 -g
 
 # Main Targets

@@ -1,5 +1,5 @@
 #include "convert.h"
-
+__attribute__((no_caller_saved_registers))
 char *itoa(int n, char *str, int base) {
 	char *digits = "0123456789ABCDEF";
 	char *p = str;
